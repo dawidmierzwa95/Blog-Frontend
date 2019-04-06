@@ -66,7 +66,7 @@
 							Send
 						</span>
 						<span class="btn btn-primary float-right"
-						      v-if="busy">
+						      v-else-if="busy">
 							<i class="fas fa-spinner fa-spin"></i>
 						</span>
 					</div>

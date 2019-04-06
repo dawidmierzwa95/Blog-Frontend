@@ -3,8 +3,8 @@
 		<div class="container">
 			<div class="row">
 				<div class="col-lg-8 col-md-10 mx-auto">
-					<div class="post-preview" v-for="item in posts">
-						<router-link :to="{ name: 'adminAddOrEditPost', params: {'slug': item.slug}}">
+					<div class="post-preview" v-for="item in articles">
+						<router-link :to="{ name: 'adminAddOrEditArticle', params: {'slug': item.slug}}">
 							<h2 class="post-title">
 								{{item.title}}
 							</h2>
@@ -23,8 +23,8 @@
 					</div>
 					<hr>
 					<!-- Pager -->
-					<router-link class="btn btn-primary float-right" :to="{ name: 'adminAddOrEditPost'}">
-						New post
+					<router-link class="btn btn-primary float-right" :to="{ name: 'adminAddOrEditArticle'}">
+						New article
 					</router-link>
 				</div>
 			</div>
@@ -44,7 +44,7 @@
         components: {},
         data() {
             return {
-                posts: [
+                articles: [
                     {
                         title: 'Man must explore, and this is exploration at its greatest',
                         author: 'dawid',
@@ -59,7 +59,7 @@
             this.$store.commit('setHeader', {
                 title: "Admin",
                 image: "/img/home-bg.jpg",
-                description: "Posts list",
+                description: "Articles list",
                 meta: ""
             });
         }
