@@ -6,7 +6,7 @@
 					<div class="post-preview">
 						<a href="#">
 							<h2 class="post-title">
-								{{ post.title ? post.title : 'No title' }}
+								{{ article.title ? article.title : 'No title' }}
 							</h2>
 						</a>
 						<p class="post-meta">
@@ -22,7 +22,7 @@
 					<div class="control-group">
 						<div class="form-group floating-label-form-group controls">
 							<label>Title</label>
-							<input v-model="post.title"
+							<input v-model="article.title"
 							       :disabled="busy"
 							       type="text"
 							       class="form-control"
@@ -35,7 +35,7 @@
 					<div class="control-group">
 						<div class="form-group floating-label-form-group controls">
 							<label>Content</label>
-							<textarea v-model="post.content"
+							<textarea v-model="article.content"
 							          :disabled="busy"
 							          rows="5"
 							          class="form-control"
@@ -61,9 +61,9 @@
 							Last autosave: {{lastAutosave}}
 						</div>
 						<span class="btn btn-primary float-right"
-						      @click="savePost"
+						      @click="saveArticle"
 						      v-if="!busy">
-							Send
+							Save
 						</span>
 						<span class="btn btn-primary float-right"
 						      v-else-if="busy">
@@ -81,39 +81,40 @@
     import API from '../../utils/API'
 
     export default {
-        name: 'Home',
+        name: 'AddOrEditArticle',
         components: {},
         data() {
             return {
                 editing: false,
 	            lastAutosave: null,
-                post: {
+                article: {
                     uuid: "",
                     title: "",
 		            content: "",
-                    photo: ""
+                    photo: "",
+	                id: 0
 	            },
 	            timer: null,
 	            busy: false
             }
         },
         methods: {
-            savePost: function() {
+            saveArticle: function() {
                 let photo = this.$refs.photo,
 	                file = new FormData();
 
                 file.append('file', photo);
 
-                this.post.photo = file;
+                this.article.photo = file;
                 this.busy = true;
 
-                API.post('post/add', this.post).then((response) =>
+                API.post('article/add', this.article).then((response) =>
                 {
-                    this.$store.commit('updateLastPost', null);
+                    this.$store.commit('updateLastArticle', null);
                     this.lastAutosave = null;
                     this.busy = false;
 
-                    this.$router.push({ path: 'post', params: {slug:'test'} })
+                    this.$router.push({ path: 'article', params: {slug:'test'} })
                 }).catch(function (error)
                 {
 	                console.log(error);
@@ -123,9 +124,9 @@
                 this.lastAutosave = new Date();
                 this.lastAutosave = this.lastAutosave.getHours() + ":" + this.lastAutosave.getMinutes();
 
-                this.$store.commit('updateLastPost', {
-                    title: this.post.title,
-                    content: this.post.content,
+                this.$store.commit('updateLastArticle', {
+                    title: this.article.title,
+                    content: this.article.content,
 	                updatedAt: this.lastAutosave
                 });
 	        }
@@ -136,9 +137,17 @@
             if(slug) {
                 this.busy = true;
 
-                API.get('post/' + slug).then((response) =>
+                API.get('articles/' + slug).then(({data} = response) =>
                 {
-                    this.post = response.data;
+                    this.article = {
+                        id: data.id,
+                        title: data.title,
+                        image: '/img/post-bg.jpg',
+                        content: data.content,
+                        tags: data.tags,
+                        slug: data.slug
+                    };
+
                     this.busy = false;
                 }).catch(function (error)
                 {
@@ -151,11 +160,11 @@
             this.$store.commit('setHeader', {
                 title: "Admin",
                 image: "/img/home-bg.jpg",
-                description: (this.editing ? "Edit post" : "New post"),
+                description: (this.editing ? "Edit article" : "New article"),
                 meta: ""
             });
 
-            this.lastAutosave = this.$store.getters.getLastSavedPost;
+            this.lastAutosave = this.$store.getters.getLastSavedArticle;
 
 	        if(this.lastAutosave) {
                 this.doAutoSave();

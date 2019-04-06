@@ -9,8 +9,8 @@
 							#{{item.name}}
 						</router-link>
 					</div>
-					<div v-if="!busy" class="post-preview" v-for="item in posts">
-						<router-link :to="{ name: 'post', params: {'slug': item.slug}}">
+					<div v-if="!busy" class="post-preview" v-for="item in articles">
+						<router-link :to="{ name: 'article', params: {'slug': item.slug}}">
 							<h2 class="post-title">
 								{{item.title}}
 							</h2>
@@ -21,7 +21,7 @@
 							{{item.created_at}}
 						</p>
 					</div>
-					<div v-if="busy">
+					<div v-else-if="busy">
 						<i class="fas fa-spinner fa-spin"></i>
 					</div>
 					<hr>
@@ -40,8 +40,8 @@
         components: {},
 	    data() {
             return {
-                posts: [],
-	            busy: false,
+                articles: [],
+	            busy: true,
 	            tags: [],
 	            currentTag: ""
             }
@@ -58,7 +58,7 @@
 
                 API.get('articles/all' + (this.currentTag ? "/" + this.currentTag : "")).then(({data} = response) =>
                 {
-                    this.posts = data;
+                    this.articles = data;
                     this.busy = false;
                 }).catch(function (error)
                 {

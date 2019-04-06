@@ -12,22 +12,34 @@
         <div class="collapse navbar-collapse" id="navbarResponsive">
           <ul class="navbar-nav ml-auto">
             <li class="nav-item">
-              <a class="nav-link" href="index.html">Home</a>
+              <router-link class="nav-link" :to="{ name: 'home'}">
+                Home
+              </router-link>
             </li>
-            <li class="nav-item" v-if="false === $store.getters.isLogged">
+            <li class="nav-item" v-if="!isLogged">
               <a class="nav-link" href="#" @click="$modal.show('login-form');">
                 Login
               </a>
             </li>
-            <li class="nav-item" v-if="true === $store.getters.isLogged">
-              <a class="nav-link" href="#">
-                Logged as @{{$store.getters.getLogin.name}}
+            <li class="nav-item" v-if="!isLogged">
+              <a class="nav-link" href="#" @click="$modal.show('register-form');">
+                Register
               </a>
             </li>
-            <li class="nav-item" v-if="$store.getters.hasPermission('ADMIN')">
+            <li class="nav-item" v-if="isLogged">
+              <a class="nav-link" href="#">
+                Logged as @{{user.name}}
+              </a>
+            </li>
+            <li class="nav-item" v-if="$store.getters.hasPermission('ADMIN|COPYWRITER')">
               <router-link class="nav-link" :to="{ name: 'adminHome'}">
                 Admin
               </router-link>
+            </li>
+            <li class="nav-item" v-if="isLogged">
+              <a href="#" class="nav-link" @click="logOut">
+                Logout
+              </a>
             </li>
           </ul>
         </div>
@@ -99,80 +111,190 @@
           <div class="form-group floating-label-form-group controls">
             <label>Email</label>
             <input v-model="loginForm.email"
+                   :disabled="busy"
+                   ref="email"
                    type="text"
                    class="form-control"
                    placeholder="Email"
                    id="email"
                    required>
+            <p class="help-block text-danger" ref="emailErrors">
+
+            </p>
           </div>
         </div>
         <div class="control-group">
           <div class="form-group floating-label-form-group controls">
             <label>Password</label>
             <input v-model="loginForm.password"
-                   type="text"
-                   class="form-control"
-                   placeholder="Password"
-                   id="password"
-                   required>
+                       :disabled="busy"
+                       ref="password"
+                       type="password"
+                       class="form-control"
+                       placeholder="Password"
+                       id="password"
+                       required>
+            <p class="help-block text-danger" ref="passwordErrors">
+            </p>
           </div>
         </div>
         <br/>
         <div class="clearfix">
-					<span class="btn btn-primary float-right" @click="logIn">
-					Login
-					</span>
+          <span class="btn btn-primary float-right" v-if="!busy" @click="logIn">
+            Login
+          </span>
+          <span class="btn btn-primary float-right" v-else-if="busy">
+            <i class="fas fa-spinner fa-spin"></i>
+          </span>
         </div>
       </div>
     </modal>
+    <modal name="register-form" :height="'auto'" :scrollable="true">
+      <div class="modal-container">
+        <div class="control-group">
+          <div class="form-group floating-label-form-group controls">
+            <label>Name</label>
+            <input v-model="registerForm.full_name"
+                   :disabled="busy"
+                   ref="email"
+                   type="text"
+                   class="form-control"
+                   placeholder="Name"
+                   required>
+            <p class="help-block text-danger" ref="emailErrors">
+
+            </p>
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="form-group floating-label-form-group controls">
+            <label>Login</label>
+            <input v-model="registerForm.name"
+                   :disabled="busy"
+                   ref="email"
+                   type="text"
+                   class="form-control"
+                   placeholder="Login"
+                   required>
+            <p class="help-block text-danger" ref="emailErrors">
+
+            </p>
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="form-group floating-label-form-group controls">
+            <label>Email</label>
+            <input v-model="registerForm.email"
+                   :disabled="busy"
+                   ref="email"
+                   type="text"
+                   class="form-control"
+                   placeholder="Email"
+                   required>
+            <p class="help-block text-danger" ref="emailErrors">
+
+            </p>
+          </div>
+        </div>
+        <div class="control-group">
+          <div class="form-group floating-label-form-group controls">
+            <label>Password</label>
+            <input v-model="registerForm.password"
+                   :disabled="busy"
+                   ref="password"
+                   type="password"
+                   class="form-control"
+                   placeholder="Password"
+                   required>
+            <p class="help-block text-danger" ref="passwordErrors">
+            </p>
+          </div>
+        </div>
+        <br/>
+        <div class="clearfix">
+          <span class="btn btn-primary float-right" v-if="!busy" @click="register">
+            Login
+          </span>
+          <span class="btn btn-primary float-right" v-else-if="busy">
+            <i class="fas fa-spinner fa-spin"></i>
+          </span>
+        </div>
+      </div>
+    </modal>
+    <v-dialog/>
   </div>
 </template>
 
 <script>
   import Vue from 'vue'
   import API from './utils/API'
+  import Validator from './utils/API'
   import VModal from 'vue-js-modal'
+  import { mapState } from 'vuex'
 
-  Vue.use(VModal, {})
+  Vue.use(VModal, { dialog: true })
 
   export default {
       name: 'app',
-      components: {
-
+      computed: {
+          ...mapState(['header', 'isLogged', 'user'])
       },
       data() {
           return {
-              header: {},
+              busy: false,
               loginForm: {
+                  email: "",
+                  password: ""
+              },
+              registerForm: {
+                  name: "",
+                  full_name: "",
                   email: "",
                   password: ""
               }
           }
       },
-      watch: {
-         '$store.getters.getHeader': function(e) {
-             this.header = e;
-         }
-      },
       methods: {
-        logIn() {
-            API.post('/user/login', this.loginForm).then(({data} = response) =>
-            {
-                if(data) {
-                    this.$store.commit('setUser', data.user);
+          logIn() {
+              this.busy = true;
 
-                    this.$modal.hide('login-form');
-                }
-            }).catch(function (error)
-            {
-                console.log(error);
-            });
-        }
+              API.post('/user/login', this.loginForm).then(({data} = response) =>
+              {
+                  if(data) {
+                      this.busy = false;
+
+                      this.$store.commit('setUser', data.user);
+                      this.$modal.hide('login-form');
+                  }
+              }).catch(function (error)
+              {
+                  console.log(error);
+              });
+          },
+          register() {
+              this.busy = true;
+
+              API.post('/user/register', this.registerForm).then(({data} = response) =>
+              {
+                  if(data) {
+                      this.busy = false;
+
+                      if(typeof data.errors !== undefined) {
+                          this.$store.commit('setUser', data.user);
+                          this.$modal.hide('register-form');
+                      }
+                  }
+              }).catch(function (error)
+              {
+                  console.log(error);
+              });
+          },
+          logOut() {
+              this.$store.commit('clearSession');
+              this.$router.push('/');
+          }
       },
       created() {
-          localStorage.removeItem('userData');
-          this.$store.commit('setUser', JSON.parse(localStorage.getItem('userData')));
-
           let js = [
                   '/vendor/jquery/jquery.min.js',
                   '/vendor/bootstrap/js/bootstrap.bundle.min.js',
@@ -205,8 +327,6 @@
               currentFile.setAttribute('href', css[i]);
               document.head.appendChild(currentFile);
           }
-
-          this.header = this.$store.getters.getHeader;
       }
   }
 </script>

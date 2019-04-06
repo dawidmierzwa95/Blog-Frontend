@@ -15,26 +15,31 @@ export default new Vuex.Store({
         permissions: [],
         token: "",
         isLogged: false,
-        lastPost: {
+        lastArticle: {
             title: "",
             content: ""
         }
     },
     mutations: {
-        setHeader (state, payload) {
+        setHeader (state, payload)
+        {
             state.header = payload;
         },
-        updateLastPost (state, payload) {
-            state.lastPost = payload;
+        updateLastArticle (state, payload)
+        {
+            state.lastArticle = payload;
 
-            if(null === payload) {
-                localStorage.removeItem('lastPost');
+            if(null === payload)
+            {
+                localStorage.removeItem('lastArticle');
             }else{
-                localStorage.setItem('lastPost', JSON.stringify({payload}));
+                localStorage.setItem('lastArticle', JSON.stringify({payload}));
             }
         },
-        setUser (state, payload) {
-            if(payload) {
+        setUser (state, payload)
+        {
+            if(payload)
+            {
                 state.user = payload;
                 state.token = payload.api_token;
                 state.permissions = payload.permissions;
@@ -42,6 +47,15 @@ export default new Vuex.Store({
 
                 localStorage.setItem('userData', JSON.stringify(payload));
             }
+        },
+        clearSession (state)
+        {
+            state.user = {};
+            state.token = "";
+            state.permissions = [];
+            state.isLogged = false;
+
+            localStorage.removeItem('userData');
         }
     },
     actions: {},
@@ -49,17 +63,44 @@ export default new Vuex.Store({
         getHeader: state => {
             return state.header;
         },
-        hasPermission: state => type => {
+        hasPermission: state => type =>
+        {
+            if(type.indexOf('|') > -1)
+            {
+                let passed = false,
+                    i = 0;
+
+                type = type.split('|');
+
+                for(; i < type.length; i++)
+                {
+                    if(state.permissions.indexOf(type[i]) > -1)
+                    {
+                        passed = true;
+                        break;
+                    }
+                }
+
+                return passed;
+            }
+
             return (state.permissions.indexOf(type) > -1);
         },
-        isLogged: state => {
+        isLogged: state =>
+        {
             return state.isLogged;
         },
-        getLogin: state => {
+        getLogin: state =>
+        {
             return state.user;
         },
-        getLastSavedPost: () => {
-            return JSON.parse(localStorage.getItem('lastPost'));
+        getLastSavedArticle: () =>
+        {
+            return JSON.parse(localStorage.getItem('lastArticle'));
+        },
+        getToken: state =>
+        {
+            return state.token;
         }
     }
 })

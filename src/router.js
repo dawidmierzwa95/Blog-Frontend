@@ -13,19 +13,21 @@ export default new Router({
             component: () => import('./views/Home.vue')
         },
         {
-            path: '/post/:slug',
-            name: 'post',
-            component: () => import('./views/Post.vue')
+            path: '/article/:slug',
+            name: 'article',
+            component: () => import('./views/Article.vue')
         },
         {
             path: '/admin',
             name: 'adminHome',
-            component: () => import('./views/admin/PostsList.vue')
+            component: () => import('./views/admin/ArticlesList.vue'),
+            meta: {admin: true}
         },
         {
-            path: '/admin/post/:slug?',
-            name: 'adminAddOrEditPost',
-            component: () => import('./views/admin/AddOrEditPost.vue')
+            path: '/admin/article/:slug?',
+            name: 'adminAddOrEditArticle',
+            component: () => import('./views/admin/AddOrEditArticle.vue'),
+            meta: {admin: true}
         },
     ]
 })

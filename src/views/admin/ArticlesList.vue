@@ -3,23 +3,20 @@
 		<div class="container">
 			<div class="row">
 				<div class="col-lg-8 col-md-10 mx-auto">
-					<div class="post-preview" v-for="item in articles">
+					<div v-if="!busy" class="post-preview" v-for="item in articles">
 						<router-link :to="{ name: 'adminAddOrEditArticle', params: {'slug': item.slug}}">
 							<h2 class="post-title">
 								{{item.title}}
 							</h2>
 						</router-link>
-						<p class="post-meta">
+						<p class="post-meta" v-if="item.author">
 							Posted by
-							<a href="#">{{item.author}}</a>,
-							{{item.createdAt}} —
-							<span class="icon">
-								<i class="far fa-edit"></i>
-							</span>
-							<span class="icon">
-								<i class="far fa-trash-alt"></i>
-							</span>
+							<a href="#">{{item.author.full_name}}</a>,
+							{{item.created_at}}
 						</p>
+					</div>
+					<div v-else-if="busy">
+						<i class="fas fa-spinner fa-spin"></i>
 					</div>
 					<hr>
 					<!-- Pager -->
@@ -36,25 +33,37 @@
 	import Vue from 'vue'
     import axios from 'axios'
     import VModal from 'vue-js-modal'
+    import { mapState } from 'vuex'
+    import API from '../../utils/API'
 
     Vue.use(VModal, {dialog: true})
 
     export default {
         name: 'Home',
-        components: {},
+        computed: {
+            ...mapState(['user'])
+        },
         data() {
             return {
-                articles: [
-                    {
-                        title: 'Man must explore, and this is exploration at its greatest',
-                        author: 'dawid',
-                        createdAt: '',
-                        slug: 'test'
-                    }
-                ]
+                articles: [],
+                busy: true
             }
         },
-	    methods: {},
+	    methods: {
+            loadArticles()
+            {
+                this.busy = true;
+
+                API.get('articles/all').then(({data} = response) =>
+                {
+                    this.articles = data;
+                    this.busy = false;
+                }).catch(function (error)
+                {
+                    console.log(error);
+                });
+            },
+	    },
         created() {
             this.$store.commit('setHeader', {
                 title: "Admin",
@@ -62,6 +71,8 @@
                 description: "Articles list",
                 meta: ""
             });
+
+            this.loadArticles();
         }
     }
 </script>
