@@ -134,12 +134,16 @@
                        placeholder="Password"
                        id="password"
                        required>
-            <p class="help-block text-danger" ref="passwordErrors">
+            <p class="help-block text-danger" ref="emailErrors" v-if="errors.login">
+              Wrong e-mail or password
             </p>
           </div>
         </div>
         <br/>
         <div class="clearfix">
+          <div>
+            <span @click="$modal.show('reset-pass-form')">I don't remember my password</span>
+          </div>
           <span class="btn btn-primary float-right" v-if="!busy" @click="logIn">
             Login
           </span>
@@ -206,14 +210,43 @@
                    class="form-control"
                    placeholder="Password"
                    required>
-            <p class="help-block text-danger" ref="passwordErrors">
+            <p class="help-block text-danger" ref="emailErrors" v-if="errors.register">
+              Something went wrong. Check e-mail format or use other.
             </p>
           </div>
         </div>
         <br/>
         <div class="clearfix">
           <span class="btn btn-primary float-right" v-if="!busy" @click="register">
-            Login
+            Register
+          </span>
+          <span class="btn btn-primary float-right" v-else-if="busy">
+            <i class="fas fa-spinner fa-spin"></i>
+          </span>
+        </div>
+      </div>
+    </modal>
+    <modal name="reset-pass-form">
+      <div class="modal-container">
+        <div class="control-group">
+          <div class="form-group floating-label-form-group controls">
+            <label>Email</label>
+            <input v-model="resetForm.email"
+                   :disabled="busy"
+                   ref="email"
+                   type="text"
+                   class="form-control"
+                   placeholder="Email"
+                   required>
+            <p class="help-block text-danger" ref="emailErrors" v-if="errors.resetPassword">
+              Incorrect e-mail!
+            </p>
+          </div>
+        </div>
+        <br/>
+        <div class="clearfix">
+          <span class="btn btn-primary float-right" v-if="!busy" @click="sendResetEmail">
+            Send
           </span>
           <span class="btn btn-primary float-right" v-else-if="busy">
             <i class="fas fa-spinner fa-spin"></i>
@@ -251,21 +284,52 @@
                   full_name: "",
                   email: "",
                   password: ""
+              },
+              resetForm: {
+                  email: ""
+              },
+              errors: {
+                  login: false,
+                  register: false,
+                  resetPassword: false
               }
           }
       },
       methods: {
           logIn() {
               this.busy = true;
+              this.errors.login = false;
 
               API.post('/user/login', this.loginForm).then(({data} = response) =>
               {
-                  if(data) {
-                      this.busy = false;
+                  this.busy = false;
 
-                      this.$store.commit('setUser', data.user);
-                      this.$modal.hide('login-form');
+                  if(!data.length) {
+                      this.errors.login = true;
+                      return;
                   }
+
+                  this.$store.commit('setUser', data.user);
+                  this.$modal.hide('login-form');
+              }).catch(function (error)
+              {
+                  console.log(error);
+              });
+          },
+          sendResetEmail() {
+              this.busy = true;
+              this.errors.reset = false;
+
+              API.post('/user/reset', this.resetForm).then(({data} = response) =>
+              {
+                  this.busy = false;
+
+                  if(!data) {
+                      this.errors.reset = true;
+                      return;
+                  }
+
+                  this.$modal.hide('reset-form');
               }).catch(function (error)
               {
                   console.log(error);
@@ -273,16 +337,20 @@
           },
           register() {
               this.busy = true;
+              this.errors.password = false;
 
               API.post('/user/register', this.registerForm).then(({data} = response) =>
               {
-                  if(data) {
-                      this.busy = false;
+                  this.busy = false;
 
-                      if(typeof data.errors !== undefined) {
-                          this.$store.commit('setUser', data.user);
-                          this.$modal.hide('register-form');
-                      }
+                  if(!data) {
+                      this.errors.password = true;
+                      return;
+                  }
+
+                  if(typeof data.errors !== undefined) {
+                      this.$store.commit('setUser', data.user);
+                      this.$modal.hide('register-form');
                   }
               }).catch(function (error)
               {

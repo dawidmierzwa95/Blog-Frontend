@@ -11,7 +11,9 @@
 						</a>
 						<p class="post-meta">
 							Author
-							<a href="#">dawid</a>
+							<a href="#">
+								{{article.author}}
+							</a>
 						</p>
 					</div>
 					<hr>
@@ -35,24 +37,27 @@
 					<div class="control-group">
 						<div class="form-group floating-label-form-group controls">
 							<label>Content</label>
-							<textarea v-model="article.content"
-							          :disabled="busy"
-							          rows="5"
-							          class="form-control"
-							          placeholder="Content"
-							          id="message"
-							          required></textarea>
+
+							<vue-ckeditor type="classic"
+							              v-model="article.content"
+							              :disabled="busy"
+							              :editors="editors"
+							              :upload-adapter="uploadAdapter">
+							</vue-ckeditor>
 							<p class="help-block text-danger"></p>
 						</div>
 					</div>
 					<div class="control-group">
 						<div class="form-group floating-label-form-group controls">
 							<label>Photo</label>
-							<input type="file"
+							<input @change="onFileChanged($event)"
+							       type="file"
 							       :disabled="busy"
 							       class="form-control"
-							       ref="photo"
 							       accept="image/png, image/jpeg">
+							<div>
+								<img :src="article.image" width="200" height="200">
+							</div>
 						</div>
 					</div>
 					<br/>
@@ -79,59 +84,123 @@
 <script>
     import Vue from 'vue'
     import API from '../../utils/API'
+    import { UploadAdapter } from '../../utils/UploadAdapter'
+    import ClassicEditor from '@ckeditor/ckeditor5-build-classic'
+    import VueCkeditor from 'vue-ckeditor5'
 
     export default {
         name: 'AddOrEditArticle',
-        components: {},
+        components: {
+            'vue-ckeditor': VueCkeditor.component
+        },
         data() {
             return {
                 editing: false,
 	            lastAutosave: null,
+                editors: {
+                    classic: ClassicEditor
+                },
+                uploadAdapter: function(loader)
+                {
+                    this.loader = loader;
+
+                    this.upload = async () =>
+                    {
+                        const result = await new Promise((resolve, reject) =>
+                        {
+                            this.loader.file.then(data =>
+                            {
+                                resolve(data);
+                            })
+                        });
+
+                        let formData = new FormData();
+                        formData.append('file', result);
+
+                        return await new UploadAdapter().uploadImage(formData);
+                    }
+
+                    this.abort = () => {}
+                },
                 article: {
-                    uuid: "",
+                    id: 0,
                     title: "",
-		            content: "",
-                    photo: "",
-	                id: 0
-	            },
+                    image: '',
+                    content: "",
+                    tags: [],
+                    slug: "",
+	                author: ""
+                },
+	            imageInstance: null,
 	            timer: null,
 	            busy: false
             }
         },
         methods: {
-            saveArticle: function() {
-                let photo = this.$refs.photo,
-	                file = new FormData();
+            onFileChanged: function(event)
+            {
+				this.imageInstance = event.target.files[0];
+                this.article.image = URL.createObjectURL(this.imageInstance);
+            },
+            saveArticle: async function()
+            {
+	            this.doAutoSave();
 
-                file.append('file', photo);
+                let formData = new FormData(),
+                    form = this.article;
 
-                this.article.photo = file;
+                formData.append('file', this.imageInstance);
+
                 this.busy = true;
 
-                API.post('article/add', this.article).then((response) =>
+                if(0 === form.id)
                 {
-                    this.$store.commit('updateLastArticle', null);
-                    this.lastAutosave = null;
-                    this.busy = false;
+                    await API.post('articles', form).then(({data} = response) =>
+                    {
+                        this.article = {
+                            id: data.id,
+                            title: data.title,
+                            image: data.image,
+                            content: data.content,
+                            tags: data.tags,
+                            slug: data.slug,
+                            author: data.author.name
+                        };
 
-                    this.$router.push({ path: 'article', params: {slug:'test'} })
-                }).catch(function (error)
+						this.$router.push('/admin/article/' + data.slug);
+	                }).catch(function (error)
+	                {
+	                    console.log(error);
+	                });
+                }else{
+                    await API.put('articles', form).then(({data} = response) =>
+                    {
+
+                    }).catch(function (error)
+                    {
+                        console.log(error);
+                    });
+                }
+
+                if(this.imageInstance)
                 {
-	                console.log(error);
-                });
+                    const {url} = await new UploadAdapter().uploadImage(formData, this.article.id);
+
+                    this.article.image = url;
+                }
+
+                this.busy = false;
             },
-            doAutoSave: function() {
+            doAutoSave: function()
+            {
                 this.lastAutosave = new Date();
                 this.lastAutosave = this.lastAutosave.getHours() + ":" + this.lastAutosave.getMinutes();
 
-                this.$store.commit('updateLastArticle', {
-                    title: this.article.title,
-                    content: this.article.content,
-	                updatedAt: this.lastAutosave
-                });
+                this.$store.commit('updateLastArticle', {updatedAt: this.lastAutosave, ...this.article});
 	        }
         },
-        created() {
+        created()
+        {
 			const {slug} = this.$route.params;
 
             if(slug) {
@@ -142,10 +211,11 @@
                     this.article = {
                         id: data.id,
                         title: data.title,
-                        image: '/img/post-bg.jpg',
+                        image: data.image,
                         content: data.content,
                         tags: data.tags,
-                        slug: data.slug
+                        slug: data.slug,
+	                    author: data.author.name
                     };
 
                     this.busy = false;
@@ -153,6 +223,8 @@
                 {
                     console.log(error);
                 });
+            }else{
+                this.article.author = this.$store.getters.getLogin
             }
 
             this.editing = !!(slug);

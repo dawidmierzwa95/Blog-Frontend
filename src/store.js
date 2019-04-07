@@ -92,7 +92,7 @@ export default new Vuex.Store({
         },
         getLogin: state =>
         {
-            return state.user;
+            return state.user.name;
         },
         getLastSavedArticle: () =>
         {

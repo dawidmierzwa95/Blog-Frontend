@@ -8,16 +8,6 @@ export default new Router({
     base: '/',
     routes: [
         {
-            path: '/:tag?',
-            name: 'home',
-            component: () => import('./views/Home.vue')
-        },
-        {
-            path: '/article/:slug',
-            name: 'article',
-            component: () => import('./views/Article.vue')
-        },
-        {
             path: '/admin',
             name: 'adminHome',
             component: () => import('./views/admin/ArticlesList.vue'),
@@ -28,6 +18,16 @@ export default new Router({
             name: 'adminAddOrEditArticle',
             component: () => import('./views/admin/AddOrEditArticle.vue'),
             meta: {admin: true}
+        },
+        {
+            path: '/:tag?',
+            name: 'home',
+            component: () => import('./views/Home.vue')
+        },
+        {
+            path: '/article/:slug',
+            name: 'article',
+            component: () => import('./views/Article.vue')
         },
     ]
 })

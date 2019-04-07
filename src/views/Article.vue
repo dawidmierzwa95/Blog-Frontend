@@ -256,14 +256,14 @@
             {
                 this.$store.commit('setHeader', {
                     title: data.title,
-                    image: "/img/post-bg.jpg",
+                    image: data.image,
                     description: "Posted by "+ data.author.full_name +", " + data.created_at,
                 });
 
                 this.article = {
                     id: data.id,
                     title: data.title,
-                    image: '/img/post-bg.jpg',
+                    image: data.image,
                     content: data.content,
                     tags: data.tags,
 	                slug: data.slug
