@@ -304,11 +304,6 @@
               {
                   this.busy = false;
 
-                  if(!data.length) {
-                      this.errors.login = true;
-                      return;
-                  }
-
                   this.$store.commit('setUser', data.user);
                   this.$modal.hide('login-form');
               }).catch(function (error)
@@ -324,11 +319,6 @@
               {
                   this.busy = false;
 
-                  if(!data) {
-                      this.errors.reset = true;
-                      return;
-                  }
-
                   this.$modal.hide('reset-form');
               }).catch(function (error)
               {
@@ -342,11 +332,6 @@
               API.post('/user/register', this.registerForm).then(({data} = response) =>
               {
                   this.busy = false;
-
-                  if(!data) {
-                      this.errors.password = true;
-                      return;
-                  }
 
                   if(typeof data.errors !== undefined) {
                       this.$store.commit('setUser', data.user);
