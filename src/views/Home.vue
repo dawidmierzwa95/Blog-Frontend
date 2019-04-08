@@ -10,18 +10,7 @@
 						</router-link>
 					</div>
 					<div v-if="!busy">
-						<div class="post-preview" v-for="item in articles">
-							<router-link :to="{ name: 'article', params: {'slug': item.slug}}">
-								<h2 class="post-title">
-									{{item.title}}
-								</h2>
-							</router-link>
-							<p class="post-meta" v-if="item.author">
-								Posted by
-								<a href="#">{{item.author.full_name}}</a>,
-								{{item.created_at}}
-							</p>
-						</div>
+						<single-article v-for="item in articles" :item="item"></single-article>
 					</div>
 					<div v-else-if="busy">
 						<i class="fas fa-spinner fa-spin"></i>
@@ -35,11 +24,12 @@
 
 <script>
 	import axios from 'axios';
-    import API from '../utils/API'
+	import RepositoryFactory from '@/repository/RepositoryFactory';
+	import SingleArticle from '@/components/SingleArticle'
 
     export default {
         name: 'Home',
-        components: {},
+        components: {SingleArticle},
 	    data() {
             return {
                 articles: [],
@@ -58,7 +48,7 @@
             loadArticles() {
                 this.busy = true;
 
-                API.get('articles/all' + (this.currentTag ? "/" + this.currentTag : "")).then(({data} = response) =>
+                RepositoryFactory.get('articles').all(this.currentTag).then(({data} = response) =>
                 {
                     this.articles = data;
                     this.busy = false;
@@ -76,7 +66,7 @@
                     this.currentTag = "";
                 }
 
-                this.$store.commit('setHeader', {
+                this.$store.commit('common/setHeader', {
                     title: (this.currentTag ? "#" + this.currentTag : "Clean Blog"),
                     image: "/img/home-bg.jpg",
                     description: "A Blog Theme by Start Bootstrap",
@@ -85,7 +75,7 @@
 		    }
 	    },
 	    created() {
-            API.get('tags/all').then(({data} = response) =>
+            RepositoryFactory.get('tags').all().then(({data} = response) =>
             {
                 this.tags = data;
             }).catch(function (error)

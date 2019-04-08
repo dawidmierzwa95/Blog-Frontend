@@ -83,10 +83,10 @@
 
 <script>
     import Vue from 'vue'
-    import API from '../../utils/API'
     import { UploadAdapter } from '../../utils/UploadAdapter'
     import ClassicEditor from '@ckeditor/ckeditor5-build-classic'
     import VueCkeditor from 'vue-ckeditor5'
+    import RepositoryFactory from '@/repository/RepositoryFactory';
 
     export default {
         name: 'AddOrEditArticle',
@@ -155,7 +155,7 @@
 
                 if(0 === form.id)
                 {
-                    await API.post('articles', form).then(({data} = response) =>
+                    await RepositoryFactory.get('articles').create(form).then(({data} = response) =>
                     {
                         this.article = {
                             id: data.id,
@@ -173,7 +173,7 @@
 	                    console.log(error);
 	                });
                 }else{
-                    await API.put('articles', form).then(({data} = response) =>
+                    await RepositoryFactory.get('articles').update(form).then(({data} = response) =>
                     {
 
                     }).catch(function (error)
@@ -196,7 +196,7 @@
                 this.lastAutosave = new Date();
                 this.lastAutosave = this.lastAutosave.getHours() + ":" + this.lastAutosave.getMinutes();
 
-                this.$store.commit('updateLastArticle', {updatedAt: this.lastAutosave, ...this.article});
+                this.$store.commit('article/updateLastArticle', {updatedAt: this.lastAutosave, ...this.article});
 	        }
         },
         created()
@@ -206,7 +206,7 @@
             if(slug) {
                 this.busy = true;
 
-                API.get('articles/' + slug).then(({data} = response) =>
+                RepositoryFactory.get('articles').get(slug).then(({data} = response) =>
                 {
                     this.article = {
                         id: data.id,
@@ -224,19 +224,19 @@
                     console.log(error);
                 });
             }else{
-                this.article.author = this.$store.getters.getLogin
+                this.article.author = this.$store.getters['auth/getLogin']
             }
 
             this.editing = !!(slug);
 
-            this.$store.commit('setHeader', {
+            this.$store.commit('common/setHeader', {
                 title: "Admin",
                 image: "/img/home-bg.jpg",
                 description: (this.editing ? "Edit article" : "New article"),
                 meta: ""
             });
 
-            this.lastAutosave = this.$store.getters.getLastSavedArticle;
+            this.lastAutosave = this.$store.getters['article/getLastSavedArticle']
 
 	        if(this.lastAutosave) {
                 this.doAutoSave();

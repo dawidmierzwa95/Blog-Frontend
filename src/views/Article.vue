@@ -69,7 +69,7 @@
 									<i class="far fa-trash-alt"></i>
 								</span>
 								<span class="icon"
-								      v-if="2 === item.status && $store.getters.hasPermission('ADMIN')"
+								      v-if="2 === item.status && $store.getters['auth/hasPermission']('ADMIN')"
 								      @click="setCommentStatus(item, 1)">
 									<i class="fas fa-redo"></i>
 								</span>
@@ -79,7 +79,7 @@
 					</div>
 				</div>
 			</div>
-			<div class="row" v-if="$store.getters.hasPermission('USER')">
+			<div class="row" v-if="$store.getters['auth/hasPermission']('USER')">
 				<div class="col-lg-8 col-md-10 mx-auto">
 					<div class="clearfix">
 						<span class="btn btn-primary float-right" @click="addComment">
@@ -121,8 +121,8 @@
 <script>
 	import Vue from 'vue'
     import VModal from 'vue-js-modal'
-    import API from '../utils/API'
 	import { mapState } from 'vuex'
+    import RepositoryFactory from '@/repository/RepositoryFactory';
 
     Vue.use(VModal)
 
@@ -130,7 +130,9 @@
         name: 'Article',
         components: {},
 	    computed: {
-		    ...mapState(['user'])
+            ...mapState('auth', {
+                user: state => state.user
+            })
 	    },
 	    data() {
             return {
@@ -178,7 +180,7 @@
 
 		        if(0 === form.id)
 		        {
-                    await API.post('comments/' + this.article.id, form).then(({data} = response) =>
+                    await RepositoryFactory.get('comments').create(this.article.id, form).then(({data} = response) =>
                     {
                         this.comments.push(data);
                     }).catch(function (error)
@@ -186,7 +188,7 @@
                         console.log(error);
                     });
 		        }else{
-                    await API.put('comments', form).then(({data} = response) =>
+                    await RepositoryFactory.get('comments').update(form).then(({data} = response) =>
                     {
                         if(data.content) {
                             this.comments.find(comment => comment.id === form.id).content = data.content;
@@ -202,7 +204,7 @@
 		    },
 		    getComments: function(articleId)
 		    {
-                API.get('comments/' + articleId).then(({data} = response) =>
+                RepositoryFactory.get('comments').all(articleId).then(({data} = response) =>
                 {
                     this.comments = data;
                     this.commentsBusy = false;
@@ -223,7 +225,7 @@
                         {
                             title: 'Yes',
                             handler: () => {
-                                API.post('comments/status/' + comment.id, {status: status}).then(({data} = response) =>
+                                RepositoryFactory.get('comments').setStatus(comment.id, {status: status}).then(({data} = response) =>
                                 {
 									comment.status = status;
 
@@ -245,16 +247,16 @@
             this.busy = true;
             this.commentsBusy = true;
 
-            this.$store.commit('setHeader', {
+            this.$store.commit('common/setHeader', {
                 title: "Loading...",
                 image: "/img/post-bg.jpg",
                 description: "",
                 meta: ""
             });
 
-            API.get('articles/' + slug).then(({data} = response) =>
+            RepositoryFactory.get('articles').get(slug).then(({data} = response) =>
             {
-                this.$store.commit('setHeader', {
+                this.$store.commit('common/setHeader', {
                     title: data.title,
                     image: data.image,
                     description: "Posted by "+ data.author.full_name +", " + data.created_at,

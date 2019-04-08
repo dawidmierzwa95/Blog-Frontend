@@ -31,7 +31,7 @@
                 Logged as @{{user.name}}
               </a>
             </li>
-            <li class="nav-item" v-if="$store.getters.hasPermission('ADMIN|COPYWRITER')">
+            <li class="nav-item" v-if="$store.getters['auth/hasPermission']('ADMIN|COPYWRITER')">
               <router-link class="nav-link" :to="{ name: 'adminHome'}">
                 Admin
               </router-link>
@@ -260,17 +260,22 @@
 
 <script>
   import Vue from 'vue'
-  import API from './utils/API'
-  import Validator from './utils/API'
   import VModal from 'vue-js-modal'
   import { mapState } from 'vuex'
+  import RepositoryFactory from '@/repository/RepositoryFactory';
 
   Vue.use(VModal, { dialog: true })
 
   export default {
       name: 'app',
       computed: {
-          ...mapState(['header', 'isLogged', 'user'])
+          ...mapState('common', {
+              header: state => state.header
+          }),
+          ...mapState('auth', {
+              isLogged: state => state.isLogged,
+              user: state => state.user
+          })
       },
       data() {
           return {
@@ -300,11 +305,11 @@
               this.busy = true;
               this.errors.login = false;
 
-              API.post('/user/login', this.loginForm).then(({data} = response) =>
+              RepositoryFactory.get('auth').login(this.loginForm).then(({data} = response) =>
               {
                   this.busy = false;
 
-                  this.$store.commit('setUser', data.user);
+                  this.$store.commit('auth/setUser', data.user);
                   this.$modal.hide('login-form');
               }).catch(function (error)
               {
@@ -315,7 +320,7 @@
               this.busy = true;
               this.errors.reset = false;
 
-              API.post('/user/reset', this.resetForm).then(({data} = response) =>
+              RepositoryFactory.get('auth').resetPassword(this.resetForm).then(({data} = response) =>
               {
                   this.busy = false;
 
@@ -329,12 +334,12 @@
               this.busy = true;
               this.errors.password = false;
 
-              API.post('/user/register', this.registerForm).then(({data} = response) =>
+              RepositoryFactory.get('auth').register(this.registerForm).then(({data} = response) =>
               {
                   this.busy = false;
 
                   if(typeof data.errors !== undefined) {
-                      this.$store.commit('setUser', data.user);
+                      this.$store.commit('auth/setUser', data.user);
                       this.$modal.hide('register-form');
                   }
               }).catch(function (error)
@@ -343,7 +348,7 @@
               });
           },
           logOut() {
-              this.$store.commit('clearSession');
+              this.$store.commit('auth/clearSession');
               this.$router.push('/');
           }
       },

@@ -1,13 +1,11 @@
-import API from '../utils/API'
+import RepositoryFactory from '@/repository/RepositoryFactory';
 
 export class UploadAdapter
 {
     uploadImage(formData, articleId = 0)
     {
-        const config = {headers: { 'Content-Type': 'multipart/form-data' }};
-
         return new Promise((resolve, reject) => {
-            API.post('articles/image' + (articleId ? '/' + articleId : ''), formData, config)
+            RepositoryFactory.get('articles').upload(formData, articleId)
                 .then(({data} = response) => resolve(data))
                 .catch((error) => reject(error));
         });

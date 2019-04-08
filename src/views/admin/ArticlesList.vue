@@ -4,29 +4,13 @@
 			<div class="row">
 				<div class="col-lg-8 col-md-10 mx-auto">
 					<div v-if="!busy">
-						<div class="post-preview" v-for="item in articles">
-							<router-link :to="{ name: 'adminAddOrEditArticle', params: {'slug': item.slug}}">
-								<h2 class="post-title">
-									{{item.title}}
-								</h2>
-							</router-link>
-							<p class="post-meta" v-if="item.author">
-								Posted by
-								<a href="#">{{item.author.full_name}}</a>,
-								{{item.created_at}}
-							</p>
-							<div>
-								<span class="icon"
-								      @click="$router.push('/admin/article/' + item.slug)">
-									<i class="far fa-edit"></i>
-								</span>
-								<span class="icon"
-								          v-if="!isCopywriter"
-									      @click="deleteArticle(item)">
-									<i class="far fa-trash-alt"></i>
-								</span>
-							</div>
-						</div>
+						<single-article
+								v-for="item in articles"
+								:item="item"
+								:editable="true"
+								:is-copywriter="isCopywriter"
+								v-on:onDelete="deleteArticle(item)">
+						</single-article>
 					</div>
 					<div v-else-if="busy">
 						<i class="fas fa-spinner fa-spin"></i>
@@ -47,16 +31,18 @@
     import axios from 'axios'
     import VModal from 'vue-js-modal'
     import { mapState, mapGetters } from 'vuex'
-    import API from '../../utils/API'
+    import RepositoryFactory from '@/repository/RepositoryFactory';
+    import SingleArticle from '@/components/SingleArticle'
 
     Vue.use(VModal, {dialog: true})
 
     export default {
         name: 'Home',
+	    components: {SingleArticle},
         computed: {
             ...mapState(['user']),
 	        isCopywriter () {
-                return !this.$store.getters.hasPermission("ADMIN");
+                return !this.$store.getters['auth/hasPermission']("ADMIN");
 	        }
         },
         data() {
@@ -70,7 +56,7 @@
             {
                 this.busy = true;
 
-                API.get('articles/all').then(({data} = response) =>
+                RepositoryFactory.get('articles').all().then(({data} = response) =>
                 {
                     this.articles = data;
                     this.busy = false;
@@ -91,7 +77,7 @@
                         {
                             title: 'Yes',
                             handler: () => {
-                                API.delete('articles/' + item.slug).then(({data} = response) =>
+                                RepositoryFactory.get('articles').delete(item.slug).then(({data} = response) =>
                                 {
                                     const {articles} = this;
 
@@ -115,7 +101,7 @@
             }
 	    },
         created() {
-            this.$store.commit('setHeader', {
+            this.$store.commit('common/setHeader', {
                 title: "Admin",
                 image: "/img/home-bg.jpg",
                 description: "Articles list",
